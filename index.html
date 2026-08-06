@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14110b">
+<title>Мой опыт использования ИИ — и как интегрировать его в компанию</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="assets/render-01.jpg">
+<style>
+/* =========================================================
+   ИИ × АРХИТЕКТУРА — «проектная мастерская»
+   Тёмный чертёжный стиль: графит, медный акцент, Anton для
+   тезисов, моно-лейблы, живой терминал, самодорисовка wireframe.
+   ========================================================= */
+
+:root{
+  --bg-0:#0f0c08;
+  --bg-1:#14110b;
+  --bg-2:#1a160e;
+  --panel:rgba(24,20,14,.88);
+  --panel-solid:#191510;
+  --ink:#f1ead9;
+  --ink-soft:rgba(241,234,217,.92);
+  --muted:#a79b85;
+  --faint:#6f6450;
+  --line:rgba(241,234,217,.11);
+  --line-strong:rgba(241,234,217,.22);
+  --accent:#d99a4e;
+  --accent-soft:#e8bd8a;
+  --red:#d96a4e;
+  --shadow:0 46px 100px -34px rgba(0,0,0,.65),0 12px 34px -14px rgba(0,0,0,.5);
+
+  --gutter:clamp(8px,1.6vw,16px);
+  --panel-max:1440px;
+  --pad-x:clamp(22px,4.6vw,72px);
+  --pad-y:clamp(18px,3.4vh,38px);
+  --radius:clamp(14px,1.8vw,20px);
+  --frame-reserve:clamp(62px,10vh,96px);
+
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+html{
+  background:var(--bg-1);
+  color-scheme:dark;
+  scroll-behavior:smooth;
+  scroll-snap-type:y mandatory;
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  color:var(--ink);
+  font-family:'Inter',Helvetica,Arial,sans-serif;
+  font-weight:400;
+  overflow-x:hidden;
+  overscroll-behavior-y:none;
+}
+
+::selection{background:var(--accent);color:#191510}
+
+img{display:block;max-width:100%}
+
+a{color:inherit}
+
+button{
+  font:inherit;color:inherit;background:none;border:0;cursor:pointer;
+}
+
+/* ---------- атмосфера: чертёжная сетка + зерно + виньетка ---------- */
+
+.atmosphere{
+  position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(120% 90% at 50% -12%, #1e1810 0%, var(--bg-1) 48%, var(--bg-0) 100%);
+}
+.atmosphere::before{
+  content:'';position:absolute;inset:0;opacity:.5;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(90% 80% at 50% 40%, #000 30%, transparent 100%);
+  mask-image:radial-gradient(90% 80% at 50% 40%, #000 30%, transparent 100%);
+}
+.atmosphere::after{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.42) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+  pointer-events:none;
+}
+
+/* ---------- интро-шторка ---------- */
+
+.intro{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:var(--bg-0);
+  transition:opacity .55s var(--ease),visibility .55s;
+}
+.intro .chrome__icon{width:26px;height:26px;color:var(--accent)}
+.intro__label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.3em;color:var(--muted);
+  text-transform:uppercase;
+}
+.intro__bar{
+  margin-top:6px;width:120px;height:2px;border-radius:2px;
+  background:var(--line);overflow:hidden;
+}
+.intro__bar i{
+  display:block;height:100%;width:40%;
+  background:var(--accent);
+  animation:intro-bar 1s var(--ease) infinite;
+}
+@keyframes intro-bar{0%{transform:translateX(-110%)}100%{transform:translateX(280%)}}
+.intro.is-done{opacity:0;visibility:hidden;pointer-events:none}
+
+/* ---------- сцена и секции ---------- */
+
+.stage{position:relative}
+
+.s{
+  min-height:100vh;min-height:100svh;
+  scroll-snap-align:start;scroll-snap-stop:always;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+
+/* ---------- панель ---------- */
+
+.panel{
+  position:relative;
+  width:min(var(--panel-max), calc(100% - var(--gutter) * 2));
+  height:calc(100vh - var(--gutter) * 2);
+  height:calc(100svh - var(--gutter) * 2);
+  background:var(--panel);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+
+.panel__inner{
+  position:relative;height:100%;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(var(--pad-y) + var(--frame-reserve)) var(--pad-x);
+}
+
+.wrap{width:100%;max-width:1200px;margin:0 auto;position:relative;z-index:2}
+
+.s--center .wrap,.s--final .wrap{text-align:center;margin:0 auto}
+
+.eyebrow{
+  display:flex;align-items:center;gap:.7em;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:400;
+  font-size:clamp(11px,1vw,13px);
+  letter-spacing:.1em;
+  color:var(--accent-soft);
+  margin-bottom:clamp(14px,2.6vh,26px);
+}
+.eyebrow::before{
+  content:'';width:22px;height:1px;background:var(--accent);
+  opacity:.55;flex:0 0 auto;
+}
+.s--center .eyebrow,.s--final .eyebrow{justify-content:center}
+.s--center .eyebrow::before,.s--final .eyebrow::before{display:none}
+
+/* ---------- фотоподложка ---------- */
+
+.shot{
+  position:absolute;inset:0;z-index:0;overflow:hidden;background:var(--bg-2);
+}
+.shot img{
+  width:100%;height:100%;object-fit:cover;object-position:center 55%;
+  transform:scale(1.06);
+  transition:transform 2.6s var(--ease);
+  will-change:transform;
+}
+.s.is-live .shot img{transform:scale(1)}
+
+@media (min-width:901px){
+  .shot img{transition:transform .14s linear}
+}
+
+/* ---------- видео (кинематографичная версия) ---------- */
+
+.shot__video{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  pointer-events:none;
+  touch-action:pan-y;
+}
+.shot__poster{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;object-position:center 55%;
+  display:none;
+  pointer-events:none;
+}
+.video--bg{transform:scale(1.06)}
+.s.is-live .video--bg{transform:scale(1);transition:transform 3.2s var(--ease)}
+
+.shot::after{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(to top,
+      rgba(15,12,8,.86) 0%,
+      rgba(15,12,8,.5) 30%,
+      rgba(15,12,8,.12) 62%,
+      rgba(15,12,8,0) 100%);
+}
+.shot--full::after{
+  background:
+    linear-gradient(to bottom, rgba(15,12,8,.5) 0%, rgba(15,12,8,.32) 100%),
+    radial-gradient(70% 60% at 50% 50%, rgba(15,12,8,.55) 0%, rgba(15,12,8,0) 100%);
+}
+.shot--full img{object-position:32% 42%}
+.shot--final img{object-position:center 30%}
+.shot--side img{object-position:62% center}
+
+.s--shot .t,.s--shot .ch,.s--shot .lead{color:var(--ink-soft)}
+.s--shot .m,.s--shot .note{color:rgba(241,234,217,.72)}
+.s--shot .eyebrow{color:var(--accent-soft)}
+
+/* ---------- типографика ---------- */
+
+.t{
+  text-transform:uppercase;
+  font-family:'Inter',sans-serif;
+  font-weight:800;
+  line-height:1.02;
+  letter-spacing:-.015em;
+  color:var(--ink);
+  text-wrap:balance;
+}
+.t--hero,.t--xl,.t--l{
+  font-family:'Anton','Inter',sans-serif;
+  font-weight:400;
+  letter-spacing:.004em;
+  line-height:1.04;
+}
+.t--hero{font-size:clamp(30px,8vw,96px)}
+.t--xl  {font-size:clamp(34px,8.6vw,104px)}
+.t--l   {font-size:clamp(28px,6.4vw,80px)}
+.t--m   {font-size:clamp(25px,4.8vw,62px)}
+.t--s   {font-size:clamp(22px,3.8vw,52px)}
+.t--xs  {font-size:clamp(20px,3.2vw,46px)}
+
+.m{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:400;
+  font-size:clamp(12px,1.05vw,15px);
+  line-height:1.7;
+  letter-spacing:.01em;
+  color:var(--muted);
+}
+.m--lg{font-size:clamp(15px,1.7vw,22px);line-height:1.5;color:var(--ink)}
+.m--term{font-size:clamp(13px,1.3vw,17px);color:var(--ink-soft)}
+
+.ch{
+  text-transform:uppercase;
+  font-weight:700;
+  font-size:clamp(18px,2.2vw,30px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  color:var(--ink);
+}
+.ch--sm{font-size:clamp(16px,1.9vw,26px)}
+
+.lead{
+  font-weight:400;
+  font-size:clamp(16px,1.9vw,27px);
+  line-height:1.38;
+  letter-spacing:-.01em;
+  max-width:36ch;
+  color:var(--ink);
+}
+
+.note{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:400;
+  font-size:clamp(12px,1.2vw,16px);
+  line-height:1.65;
+  color:var(--muted);
+}
+
+.acc{color:var(--accent)}
+.acc-soft{color:var(--accent-soft)}
+.rule{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:.18em}
+
+/* 01 — обложка */
+.s--cover .panel__inner{justify-content:flex-end}
+.s--cover .wrap{max-width:min(1080px,84%)}
+
+/* подсказка листать */
+.scroll-hint{
+  position:absolute;left:50%;bottom:calc(var(--gutter) + 14px);
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.34em;text-transform:uppercase;
+  color:rgba(241,234,217,.5);
+  z-index:3;
+}
+.scroll-hint__line{
+  width:1px;height:34px;overflow:hidden;background:rgba(241,234,217,.14);
+}
+.scroll-hint__line i{
+  display:block;width:100%;height:100%;
+  background:linear-gradient(to bottom,transparent,var(--accent-soft));
+  animation:hint-drop 1.9s var(--ease) infinite;
+}
+@keyframes hint-drop{0%{transform:translateY(-100%)}55%{transform:translateY(0)}100%{transform:translateY(100%)}}
+
+/* 08 — сплит */
+.s--split .shot{right:auto;width:41%}
+.s--split .panel__inner{padding-left:calc(41% + var(--pad-x))}
+
+/* ---------- бегущая строка ---------- */
+
+.marquee{
+  position:relative;z-index:5;overflow:hidden;
+  background:var(--bg-2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:15px 0;
+  scroll-snap-align:none;
+}
+.marquee__track{
+  display:flex;width:max-content;
+  animation:marquee 30s linear infinite;
+}
+.marquee__group{
+  display:flex;align-items:center;gap:2.6em;padding-right:2.6em;
+}
+.marquee__group span{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--faint);white-space:nowrap;
+}
+.marquee__group b{color:var(--accent);font-weight:400}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ---------- wireframe ---------- */
+
+.structure{
+  position:absolute;pointer-events:none;z-index:1;
+  color:var(--accent);opacity:.42;
+}
+.structure--side{
+  width:clamp(130px,15vw,200px);
+  top:clamp(14px,3.4vh,30px);
+  right:clamp(14px,3vw,30px);
+}
+.structure path{
+  stroke-dasharray:1;stroke-dashoffset:1;
+}
+.s.is-live .structure path{
+  animation:draw 1.5s var(--ease) forwards;
+  animation-delay:var(--d,0s);
+}
+@keyframes draw{to{stroke-dashoffset:0}}
+.structure circle{opacity:0}
+.s.is-live .structure circle{
+  animation:node-fade .35s var(--ease) forwards;
+  animation-delay:var(--d,0s);
+}
+@keyframes node-fade{to{opacity:1}}
+
+/* ---------- списки ---------- */
+
+.list{list-style:none}
+.list li{margin-top:clamp(9px,1.5vh,16px)}
+.list--idx{
+  list-style:none;
+}
+.list--idx li{
+  display:grid;grid-template-columns:3.2em 1fr;gap:1em;align-items:baseline;
+}
+.list--idx .idx{
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(11px,1vw,13px);
+  color:var(--faint);
+}
+.list--idx .idx::after{content:'—';margin-left:.5em;color:var(--line-strong)}
+
+/* зачёркивание: красная линия проезжает по пункту */
+.list--cross li{
+  position:relative;
+  padding:.1em 0;
+  width:max-content;
+  max-width:100%;
+}
+.list--cross li::after{
+  content:'';position:absolute;left:0;top:56%;
+  width:100%;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--red) 10%,var(--red) 90%,transparent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .5s var(--ease) calc(var(--d,0ms) + 420ms);
+}
+.list--cross li.in::after{transform:scaleX(1)}
+
+.s .t + .list,.s .t + .rows,.s .t + .lead,.s .t + .cols,.s .t + .steps,.s .eyebrow + .t{margin-top:0}
+.s .t + .list,.s .t + .rows,.s .t + .lead,.s .t + .cols,.s .t + .steps{margin-top:clamp(30px,6vh,72px)}
+.list + .note,.list + .t,.steps + .t,.term + .t{margin-top:clamp(30px,6vh,72px)}
+
+/* ---------- колонки ---------- */
+
+.cols{display:grid;gap:clamp(18px,2.4vw,40px)}
+.cols--3{grid-template-columns:repeat(3,1fr)}
+.cols--2{grid-template-columns:repeat(2,1fr)}
+
+.col{
+  position:relative;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:clamp(20px,2.6vw,34px);
+  background:rgba(241,234,217,.02);
+  transition:border-color .3s var(--ease),transform .3s var(--ease),background .3s var(--ease);
+}
+@media (hover:hover){
+  .col:hover{
+    border-color:var(--line-strong);
+    background:rgba(241,234,217,.045);
+    transform:translateY(-3px);
+  }
+}
+.col .ico{
+  display:block;
+  width:30px;height:30px;color:var(--accent);
+  margin-bottom:clamp(16px,2.4vh,26px);
+}
+.col .ico svg{width:100%;height:100%}
+.col .num{
+  display:block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(12px,1.1vw,14px);
+  letter-spacing:.14em;
+  color:var(--faint);
+  margin-bottom:clamp(10px,1.8vh,18px);
+}
+.col .ch{margin-bottom:clamp(10px,1.8vh,20px)}
+.col .m{max-width:34ch}
+
+/* ---------- строки (коммуникация) ---------- */
+
+.rows{display:block}
+.row{
+  display:grid;
+  grid-template-columns:minmax(0,26%) minmax(0,1fr);
+  gap:clamp(16px,3vw,56px);
+  align-items:baseline;
+  padding:clamp(13px,2.4vh,24px) clamp(8px,1.2vw,16px);
+  border-top:1px solid var(--line);
+  border-radius:10px;
+  transition:background .25s var(--ease);
+}
+.row:last-child{border-bottom:1px solid var(--line)}
+.row .m{max-width:46ch}
+@media (hover:hover){
+  .row:hover{background:rgba(241,234,217,.03)}
+  .row:hover .ch{color:var(--accent-soft)}
+}
+.row .ch{transition:color .25s var(--ease)}
+.row__live{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--accent);margin-right:.55em;
+  box-shadow:0 0 0 0 rgba(217,154,78,.5);
+  animation:pulse 2.2s var(--ease) infinite;
+  vertical-align:middle;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(217,154,78,.45)}
+  70%{box-shadow:0 0 0 7px rgba(217,154,78,0)}
+  100%{box-shadow:0 0 0 0 rgba(217,154,78,0)}
+}
+
+/* ---------- терминал ---------- */
+
+.term{
+  margin-top:clamp(24px,4.6vh,56px);
+  border:1px solid var(--line-strong);
+  border-radius:14px;
+  overflow:hidden;
+  background:#0e0c08;
+  box-shadow:0 24px 60px -28px rgba(0,0,0,.7);
+  max-width:820px;
+}
+.term__bar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--line);
+}
+.term__dot{width:9px;height:9px;border-radius:50%;opacity:.9}
+.term__dot:nth-child(1){background:#b45f4a}
+.term__dot:nth-child(2){background:#b08a4a}
+.term__dot:nth-child(3){background:#6f8f5f}
+.term__title{
+  margin-left:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.08em;color:var(--faint);
+}
+.term__body{padding:clamp(18px,3vh,28px) clamp(18px,2.6vw,30px)}
+.term__line{
+  display:flex;align-items:baseline;gap:.6em;
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(13px,1.35vw,17px);
+  line-height:1.8;
+  color:var(--ink-soft);
+}
+.term__prompt{color:var(--accent);flex:0 0 auto}
+.term__caret{
+  display:inline-block;width:8px;height:1.15em;
+  background:var(--accent);vertical-align:-.18em;
+  animation:caret 1s steps(2) infinite;
+}
+@keyframes caret{50%{opacity:0}}
+.term__saved{
+  margin-top:clamp(14px,2.4vh,22px);
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(10px,.95vw,12px);
+  letter-spacing:.12em;color:var(--faint);
+  text-transform:uppercase;
+}
+.term__saved b{color:var(--accent-soft);font-weight:500}
+
+/* ---------- шаги (план) ---------- */
+
+.steps{
+  position:relative;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(20px,3vw,48px);
+}
+.steps::before{
+  content:'';position:absolute;top:22px;left:6%;right:6%;
+  border-top:1px dashed var(--line-strong);
+}
+.step{position:relative;padding-top:clamp(56px,7vh,72px)}
+.step__n{
+  position:absolute;top:0;left:0;
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line-strong);
+  background:var(--panel-solid);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;color:var(--muted);
+  transition:color .4s var(--ease),border-color .4s var(--ease),box-shadow .4s var(--ease);
+  z-index:1;
+}
+.step.in .step__n{
+  color:var(--accent);border-color:var(--accent);
+  box-shadow:0 0 0 5px rgba(217,154,78,.12),0 0 24px rgba(217,154,78,.25);
+}
+.step .ch{margin-bottom:clamp(8px,1.6vh,18px)}
+.step .m{max-width:30ch}
+
+/* ---------- фрейм: постоянный UI-чейн ---------- */
+
+.frame{
+  position:fixed;left:0;right:0;margin-left:auto;margin-right:auto;
+  width:min(var(--panel-max), calc(100% - var(--gutter) * 2));
+  padding:0 var(--pad-x);
+  z-index:40;
+  display:flex;align-items:center;justify-content:space-between;
+  pointer-events:none;
+}
+.frame--top{top:calc(var(--gutter) + var(--pad-y))}
+.frame--bottom{bottom:calc(var(--gutter) + var(--pad-y))}
+
+.chrome{
+  pointer-events:auto;
+  display:inline-flex;align-items:center;gap:.55em;
+  font-family:'JetBrains Mono',monospace;
+  font-size:clamp(10px,.85vw,12px);
+  letter-spacing:.05em;
+  color:var(--ink);
+  white-space:nowrap;
+}
+.chrome--menu,.chrome--cta,.chrome--counter{
+  min-height:40px;
+  background:rgba(25,21,16,.82);
+  border:1px solid var(--line-strong);
+  border-radius:999px;
+  padding:.55em 1.05em;
+  cursor:pointer;
+  transition:background .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease);
+}
+.chrome--menu:hover,.chrome--cta:hover{
+  background:var(--panel-solid);border-color:var(--accent);
+}
+.chrome--menu:focus-visible,.chrome--cta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.chrome__icon{width:13px;height:13px;fill:currentColor;flex:0 0 auto}
+.chrome--cta .chrome__icon{width:14px;height:14px;transition:transform .25s var(--ease)}
+.chrome--cta:hover .chrome__icon{transform:translateX(3px)}
+
+.chrome--mark{gap:.65em;color:var(--muted)}
+.chrome__icon--mark{color:var(--accent);animation:node-spin 26s linear infinite}
+@keyframes node-spin{to{transform:rotate(360deg)}}
+.mark__label{font-size:clamp(9px,.78vw,11px);letter-spacing:.16em}
+
+.chrome--counter{
+  cursor:default;
+  border-radius:999px;
+  background:rgba(25,21,16,.82);
+  border:1px solid var(--line-strong);
+  padding:.6em 1.05em;
+}
+.chrome--counter .chrome__icon{color:var(--accent)}
+.counter__cur{color:var(--accent-soft);font-weight:500}
+
+.chrome--progress{
+  background:rgba(25,21,16,.82);
+  border:1px solid var(--line-strong);
+  border-radius:999px;
+  padding:.4em .9em .4em .4em;
+  gap:.7em;
+}
+.progress-ring{position:relative;width:30px;height:30px;flex:0 0 auto}
+.progress-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:var(--line);stroke-width:2}
+.ring-fill{
+  fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
+  stroke-dasharray:91.1;stroke-dashoffset:91.1;
+  transition:stroke-dashoffset .2s linear;
+}
+.progress-ring__num{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:var(--ink);
+}
+.chrome--progress__label{color:var(--muted)}
+
+/* ---------- меню ---------- */
+
+.menu-wrap{position:relative;pointer-events:auto}
+
+.menu-panel{
+  position:absolute;top:calc(100% + 10px);left:0;z-index:60;
+  width:min(300px,72vw);
+  max-height:min(64vh,540px);
+  overflow-y:auto;
+  background:var(--panel-solid);
+  border:1px solid var(--line-strong);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:10px;
+  opacity:0;visibility:hidden;
+  transform:translateY(-10px) scale(.98);
+  transition:opacity .24s var(--ease),transform .24s var(--ease),visibility .24s;
+}
+.menu-panel.is-open{opacity:1;visibility:visible;transform:none}
+
+.menu-panel__list{list-style:none}
+.menu-panel__list a{
+  display:flex;align-items:baseline;gap:.85em;
+  padding:.68em .75em;
+  border-radius:10px;
+  text-decoration:none;
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:500;
+  transition:background .16s var(--ease),color .16s var(--ease),padding-left .25s var(--ease);
+}
+.menu-panel__list a:hover,.menu-panel__list a:focus-visible{
+  background:rgba(241,234,217,.06);
+  padding-left:1em;
+}
+.menu-panel__list a.is-active{color:var(--accent-soft)}
+.menu-panel__list span{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--faint);
+  min-width:1.6em;
+}
+
+/* ---------- пагинация (точки) ---------- */
+
+.dots{
+  position:fixed;
+  bottom:calc(var(--gutter) * .4);
+  left:50%;transform:translateX(-50%);
+  z-index:41;
+  display:flex;gap:8px;
+  list-style:none;
+  pointer-events:none;
+}
+.dots__i{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--line-strong);
+  transition:background .25s var(--ease),transform .25s var(--ease),box-shadow .25s var(--ease);
+}
+.dots__i.is-active{
+  background:var(--accent);transform:scale(1.7);
+  box-shadow:0 0 10px rgba(217,154,78,.55);
+}
+
+/* ---------- нижняя панель (мобильный) ---------- */
+
+.navbar{
+  position:fixed;
+  left:50%;transform:translateX(-50%);
+  bottom:calc(10px + env(safe-area-inset-bottom));
+  z-index:45;
+  display:none;
+  align-items:center;gap:12px;
+  width:min(92vw,440px);
+  padding:7px 8px;
+  background:rgba(25,21,16,.92);
+  border:1px solid var(--line-strong);
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.navbar__btn{
+  min-width:46px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:999px;
+  border:1px solid var(--line-strong);
+  color:var(--ink);
+  transition:background .2s var(--ease),border-color .2s var(--ease);
+  -webkit-tap-highlight-color:transparent;
+}
+.navbar__btn:active{background:rgba(241,234,217,.08)}
+.navbar__btn svg{width:16px;height:16px}
+.navbar__count{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.08em;color:var(--muted);
+  white-space:nowrap;
+}
+.navbar__count b{color:var(--accent-soft);font-weight:500}
+.navbar__track{
+  flex:1;height:3px;border-radius:3px;
+  background:var(--line);overflow:hidden;
+}
+.navbar__fill{
+  height:100%;width:0%;
+  background:var(--accent);border-radius:3px;
+  transition:width .25s var(--ease);
+}
+
+/* ---------- появление ---------- */
+
+.r{
+  opacity:0;
+  transform:translateY(26px);
+  filter:blur(7px);
+  transition:opacity .85s var(--ease),transform .85s var(--ease),filter .85s var(--ease);
+  transition-delay:var(--d,0ms);
+}
+.r.in{opacity:1;transform:none;filter:none}
+
+/* ---------- адаптив ---------- */
+
+@media (max-width:900px){
+  :root{--frame-reserve:78px}
+  /* на мобильном snap выключен: на iOS он конфликтует с видео и адресной строкой,
+     из-за чего обложка «прилипает» при скролле */
+  html{scroll-snap-type:none}
+  .frame--top{top:calc(var(--gutter) + var(--pad-y) + env(safe-area-inset-top))}
+  .chrome--menu,.chrome--cta{min-height:44px}
+  .s{scroll-snap-align:none;scroll-snap-stop:normal;min-height:100vh;height:auto;padding:calc(var(--gutter) + 2px) 0}
+  .panel{height:auto;min-height:calc(100vh - var(--gutter) * 2);min-height:calc(100svh - var(--gutter) * 2)}
+  .s--shot .panel{height:calc(100svh - var(--gutter) * 2);min-height:0}
+  .panel,.navbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .panel__inner{
+    min-height:calc(100svh - var(--gutter) * 2);
+    justify-content:center;
+    padding-top:calc(var(--frame-reserve) + 6px);
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  }
+  .s--shot .panel__inner{min-height:0}
+  .cols--3,.cols--2,.steps{grid-template-columns:1fr;gap:clamp(16px,2.6vh,26px)}
+  .col .m,.step .m,.row .m{max-width:none}
+  .row{grid-template-columns:1fr;gap:6px;align-items:start}
+  .lead{max-width:none}
+  .s--cover .wrap{max-width:100%}
+  .structure--side{display:none}
+  .s--split .shot{width:100%;height:32svh;bottom:auto}
+  .s--split .shot--side img{object-position:center 58%}
+  .s--split .panel__inner{
+    padding-left:var(--pad-x);
+    padding-top:calc(32svh + var(--pad-y) + var(--frame-reserve));
+  }
+  .s--split .panel{min-height:0}
+  .mark__label{display:none}
+  .chrome--progress__label{display:none}
+  .dots{display:none}
+  .frame--bottom{display:none}
+  .navbar{display:flex}
+  .scroll-hint{display:none}
+  .r{filter:none}
+  .video--bg{display:none}
+  .shot__poster{display:block;animation:kenburns 16s ease-in-out infinite alternate}
+  .s--cover .shot__poster{display:none}
+  .col{padding:16px 18px}
+  .col .ico{margin-bottom:14px}
+  .col .num{margin-bottom:8px}
+  .col .ch{margin-bottom:12px}
+  .steps{gap:18px}
+  .step .ch{margin-bottom:10px}
+  .row{padding:10px 6px}
+  .steps::before{display:none}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:0 16px;padding-top:0}
+  .step__n{position:relative;grid-row:1 / span 2}
+  .step .ch{grid-column:2}
+  .step .m{grid-column:2}
+}
+
+@keyframes kenburns{
+  from{transform:scale(1.06)}
+  to{transform:scale(1.22) translateY(-2.5%)}
+}
+
+@media (max-width:560px){
+  .chrome--menu span,.chrome--cta span{display:none}
+  .chrome--menu,.chrome--cta{padding:.7em;min-width:44px;justify-content:center}
+  .t--hero{font-size:clamp(28px,10.5vw,44px)}
+  .t--xl{font-size:clamp(30px,11vw,46px)}
+  .t--l{font-size:clamp(26px,9vw,38px)}
+  .list--idx li{grid-template-columns:2.6em 1fr}
+}
+
+@media (max-width:380px){
+  .steps{gap:12px}
+  .step .ch{margin-bottom:8px}
+  .t--xs{font-size:17px}
+  .eyebrow{margin-bottom:14px}
+  .steps + .t,.list + .t{margin-top:18px}
+  .col{padding:12px 14px}
+  .step__n{width:30px;height:30px;font-size:11px}
+  .step{grid-template-columns:30px 1fr;gap:0 12px}
+}
+
+/* ландшафт на телефонах: короткие экраны */
+@media (max-height:520px) and (orientation:landscape){
+  :root{--frame-reserve:60px}
+  .t--hero{font-size:clamp(20px,7vh,34px)}
+  .t--xl{font-size:clamp(20px,7vh,34px)}
+  .t--l{font-size:clamp(17px,5.5vh,28px)}
+  .t--s{font-size:18px}
+  .s--shot .panel__inner{padding-top:calc(var(--frame-reserve) + 4px);padding-bottom:72px}
+  .row{padding:6px}
+  .ch--sm{font-size:15px}
+  .list--cross li{margin-top:3px}
+  .eyebrow{margin-bottom:12px}
+  .row{grid-template-columns:minmax(0,32%) 1fr;gap:8px;align-items:baseline}
+}
+
+@media (max-height:560px){
+  html{scroll-snap-type:y proximity}
+  .s{scroll-snap-stop:normal;height:auto}
+  .panel{height:auto;min-height:calc(100vh - var(--gutter) * 2)}
+  .dots{display:none}
+}
+
+/* ---------- мобильное меню: полноэкранная шторка ---------- */
+
+@media (max-width:900px){
+  .menu-panel{
+    position:fixed;inset:0;z-index:70;
+    width:100%;max-height:none;
+    display:flex;flex-direction:column;justify-content:flex-start;
+    padding:calc(92px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
+    background:var(--bg-1);
+    border:0;border-radius:0;
+    transform:translateY(102%);
+    transition:transform .38s var(--ease),opacity .3s var(--ease),visibility .3s;
+    opacity:1;visibility:visible;
+  }
+  .menu-panel.is-open{transform:none}
+  .menu-panel:not(.is-open){opacity:0;visibility:hidden;pointer-events:none}
+  .menu-panel__list a{
+    padding:16px 4px;
+    font-size:19px;font-weight:600;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+  }
+  .menu-panel__list a:hover,.menu-panel__list a:focus-visible{background:none;padding-left:4px}
+  .menu-panel__list span{font-size:12px}
+  body.menu-open{overflow:hidden}
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .r{opacity:1;transform:none;filter:none;transition:none}
+  .shot img{transform:none;transition:none}
+  .shot__video{display:none}
+  .shot__poster{display:block;animation:none}
+  .marquee__track{animation:none}
+  .chrome__icon--mark{animation:none}
+  .scroll-hint__line i{animation:none}
+  .term__caret{animation:none}
+  .intro{display:none}
+  .step.in .step__n{transition:none}
+}
+
+/* =========================================================
+   БЛОК «МОИ ПРОЕКТЫ» (добавлено)
+   ========================================================= */
+
+/* проектные слайды: постер-подложка видна и на десктопе (видео нет) */
+.s--proj .shot__poster{display:block}
+.s--proj .panel__inner{justify-content:flex-end}
+.s--proj .wrap{max-width:min(1080px,84%)}
+.s--proj .shot::after{
+  background:linear-gradient(to top,
+    rgba(15,12,8,.94) 0%,
+    rgba(15,12,8,.64) 30%,
+    rgba(15,12,8,.22) 62%,
+    rgba(15,12,8,.05) 100%);
+}
+
+/* интро «Мои проекты» (s10): усиленная затемняющая шторка под центрированный текст */
+.s--center.s--vid .shot::after{
+  background:
+    linear-gradient(to bottom, rgba(15,12,8,.55) 0%, rgba(15,12,8,.4) 100%),
+    radial-gradient(75% 65% at 50% 50%, rgba(15,12,8,.85) 0%, rgba(15,12,8,.5) 100%);
+}
+.s--center.s--vid .wrap .m{
+  color:rgba(241,234,217,.92);
+  text-shadow:0 1px 18px rgba(15,12,8,.9);
+}
+
+/* сплит-слайд (08, визуал): карточки не вылезают за панель */
+.s--split .cols--3{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.8vw,26px)}
+.s--split .col{padding:clamp(14px,1.8vw,24px)}
+
+/* проект 01 — постоянный Ken Burns (десктоп), как кино-наезд */
+@media (min-width:901px){
+  .s--kb .shot img{
+    transform-origin:64% 56%;
+    animation:kb-hero 34s ease-in-out infinite alternate;
+    will-change:transform;
+  }
+}
+@keyframes kb-hero{
+  from{transform:scale(1.06) translate(0,0)}
+  to{transform:scale(1.2) translate(-1.8%,-2.4%)}
+}
+
+/* плёночная лента кадров */
+.strip{
+  display:flex;gap:clamp(8px,1vw,14px);
+  margin-top:clamp(18px,3.4vh,36px);
+  overflow-x:auto;
+  padding:4px 2px 12px;
+  max-width:min(100%,860px);
+  scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent;
+  -webkit-overflow-scrolling:touch;
+}
+.strip::-webkit-scrollbar{height:5px}
+.strip::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
+.strip img{
+  flex:0 0 auto;
+  width:clamp(108px,15vw,196px);
+  aspect-ratio:4/3;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--line-strong);
+  box-shadow:0 16px 38px -20px rgba(0,0,0,.75);
+  opacity:.92;
+  transition:transform .35s var(--ease),opacity .35s var(--ease),border-color .35s var(--ease);
+}
+@media (hover:hover){
+  .strip img:hover{transform:translateY(-5px);opacity:1;border-color:var(--accent)}
+}
+
+/* адаптив проектных слайдов */
+@media (max-width:900px){
+  .s--proj .panel{height:auto;min-height:calc(100svh - var(--gutter) * 2)}
+  .s--proj .panel__inner{
+    min-height:calc(100svh - var(--gutter) * 2);
+    justify-content:center;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  }
+  .s--proj .wrap{max-width:100%}
+  .strip{margin-top:clamp(14px,2.6vh,24px);max-width:100%}
+  .strip img{width:clamp(96px,42vw,168px)}
+}
+@media (max-width:560px){
+  .strip img{width:clamp(92px,44vw,150px)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .s--kb .shot img{animation:none}
+}
+
+/* слайды с видео: на десктопе играет ролик, постер только на мобильном */
+.s--vid .shot__poster{display:none}
+@media (max-width:900px){
+  .s--vid .shot__poster{display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG-символы -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ico-menu" viewBox="0 0 16 16">
+      <circle cx="2" cy="2" r="1.3"></circle><circle cx="8" cy="2" r="1.3"></circle><circle cx="14" cy="2" r="1.3"></circle>
+      <circle cx="2" cy="8" r="1.3"></circle><circle cx="8" cy="8" r="1.3"></circle><circle cx="14" cy="8" r="1.3"></circle>
+      <circle cx="2" cy="14" r="1.3"></circle><circle cx="8" cy="14" r="1.3"></circle><circle cx="14" cy="14" r="1.3"></circle>
+    </symbol>
+    <symbol id="ico-close" viewBox="0 0 16 16">
+      <path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="ico-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h15M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="ico-prev" viewBox="0 0 24 24">
+      <path d="M20 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="ico-node" viewBox="0 0 16 16">
+      <path d="M8 1v4M8 11v4M1 8h4M11 8h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+      <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.3"></circle>
+    </symbol>
+    <symbol id="ico-chat" viewBox="0 0 24 24">
+      <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-6l-4.5 3.6V17H6a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="ico-plug" viewBox="0 0 24 24">
+      <path d="M9 7V3.5M15 7V3.5M7 7h10v3.5a5 5 0 0 1-10 0Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M12 15.5V20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="ico-term" viewBox="0 0 24 24">
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+      <path d="M8 9.5l2.6 2.5L8 14.5M12.5 14.5H16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="ico-play" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+      <path d="M10.2 9.2v5.6l4.8-2.8Z" fill="currentColor" stroke="none"></path>
+    </symbol>
+    <symbol id="ico-layers" viewBox="0 0 24 24">
+      <path d="M12 3.5 20 8l-8 4.5L4 8Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+      <path d="M4 12.5l8 4.5 8-4.5M4 16.5l8 4.5 8-4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="ico-pen" viewBox="0 0 24 24">
+      <path d="M4.5 19.5 6 15.5 16.3 5.2a2.2 2.2 0 0 1 3.1 3.1L9.1 18.6l-4.6.9Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+    </symbol>
+    <!-- wireframe-строение -->
+    <symbol id="ico-structure" viewBox="0 0 400 460">
+      <g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round">
+        <path pathLength="1" style="--d:.05s" d="M60 360 L200 430 L340 360 L340 160 L200 90 L60 160 Z"></path>
+        <path pathLength="1" style="--d:.18s" d="M60 160 L200 230 L340 160"></path>
+        <path pathLength="1" style="--d:.28s" d="M200 230 L200 430"></path>
+        <path pathLength="1" style="--d:.38s" d="M60 220 L200 290 L340 220" opacity=".55"></path>
+        <path pathLength="1" style="--d:.48s" d="M200 290 L200 430" opacity=".55"></path>
+        <path pathLength="1" style="--d:.58s" d="M60 280 L200 350 L340 280"></path>
+        <path pathLength="1" style="--d:.68s" d="M60 160 L60 360"></path>
+        <path pathLength="1" style="--d:.78s" d="M340 160 L340 360"></path>
+        <path pathLength="1" style="--d:.88s" d="M130 195 L130 395" opacity=".4"></path>
+        <path pathLength="1" style="--d:.98s" d="M270 195 L270 395" opacity=".4"></path>
+        <path pathLength="1" style="--d:1.08s" d="M200 90 L200 30" opacity=".6"></path>
+        <path pathLength="1" style="--d:1.18s" d="M170 40 L230 40" opacity=".6"></path>
+        <path pathLength="1" style="--d:1.3s" d="M20 400 L380 400" stroke-dasharray="2 8" opacity=".35"></path>
+      </g>
+      <g fill="currentColor" stroke="none" style="--d:1.3s">
+        <circle cx="200" cy="230" r="4"></circle>
+        <circle cx="60" cy="160" r="3"></circle>
+        <circle cx="340" cy="280" r="3"></circle>
+        <circle cx="200" cy="30" r="3"></circle>
+        <circle cx="60" cy="360" r="3"></circle>
+        <circle cx="340" cy="360" r="3"></circle>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- интро -->
+<div class="intro" id="intro" aria-hidden="true">
+  <svg class="chrome__icon"><use href="#ico-node"></use></svg>
+  <span class="intro__label">ИИ&nbsp;×&nbsp;ДИЗАЙН</span>
+  <span class="intro__bar"><i></i></span>
+</div>
+
+<!-- фрейм: постоянный UI-чейн -->
+<header class="frame frame--top">
+  <div class="menu-wrap">
+    <button class="chrome chrome--menu" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel" type="button">
+      <svg class="chrome__icon"><use id="menuIcoUse" href="#ico-menu"></use></svg>
+      <span>[ Меню ]</span>
+    </button>
+    <nav class="menu-panel" id="menuPanel" aria-hidden="true">
+      <ol class="menu-panel__list">
+        <li><a href="#s01" data-i="01"><span>01</span>Обложка</a></li>
+        <li><a href="#s02" data-i="02"><span>02</span>Где уходит время</a></li>
+        <li><a href="#s03" data-i="03"><span>03</span>Главный тезис</a></li>
+        <li><a href="#s04" data-i="04"><span>04</span>Три способа подключения</a></li>
+        <li><a href="#s05" data-i="05"><span>05</span>Коммуникация</a></li>
+        <li><a href="#s06" data-i="06"><span>06</span>Знания компании</a></li>
+        <li><a href="#s07" data-i="07"><span>07</span>Проектирование</a></li>
+        <li><a href="#s08" data-i="08"><span>08</span>Визуал</a></li>
+        <li><a href="#s09" data-i="09"><span>09</span>Что ИИ не делает</a></li>
+        <li><a href="#s10" data-i="10"><span>10</span>Мои проекты</a></li>
+        <li><a href="#s11" data-i="11"><span>11</span>Проект 01</a></li>
+        <li><a href="#s12" data-i="12"><span>12</span>Проект 02</a></li>
+        <li><a href="#s13" data-i="13"><span>13</span>Проект 03</a></li>
+        <li><a href="#s14" data-i="14"><span>14</span>Проект 04</a></li>
+        <li><a href="#s15" data-i="15"><span>15</span>Проект 05</a></li>
+        <li><a href="#s16" data-i="16"><span>16</span>План внедрения</a></li>
+        <li><a href="#s17" data-i="17"><span>17</span>Финал</a></li>
+      </ol>
+    </nav>
+  </div>
+  <div class="chrome chrome--mark" aria-hidden="true">
+    <svg class="chrome__icon chrome__icon--mark"><use href="#ico-node"></use></svg>
+    <span class="mark__label">ИИ&nbsp;×&nbsp;ДИЗАЙН</span>
+  </div>
+  <button class="chrome chrome--cta" id="nextBtn" type="button">
+    <span>[ Далее ]</span>
+    <svg class="chrome__icon"><use href="#ico-arrow"></use></svg>
+  </button>
+</header>
+
+<footer class="frame frame--bottom">
+  <div class="chrome chrome--progress">
+    <span class="progress-ring" aria-hidden="true">
+      <svg viewBox="0 0 34 34"><circle class="ring-track" cx="17" cy="17" r="14.5"></circle><circle class="ring-fill" cx="17" cy="17" r="14.5"></circle></svg>
+      <span class="progress-ring__num"><span class="progress-pct">0</span>%</span>
+    </span>
+    <span class="chrome--progress__label">Прогресс показа</span>
+  </div>
+  <div class="chrome chrome--counter">
+    <svg class="chrome__icon"><use href="#ico-node"></use></svg>
+    <span><span class="counter__cur">01</span> / 17</span>
+  </div>
+</footer>
+
+<ol class="dots" aria-hidden="true">
+  <li class="dots__i is-active"></li><li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li>
+  <li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li>
+  <li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li>
+  <li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li><li class="dots__i"></li>
+  <li class="dots__i"></li>
+</ol>
+
+<!-- мобильная нижняя панель -->
+<div class="navbar" id="navbar" aria-label="Навигация по слайдам">
+  <button class="navbar__btn" id="prevBtn" type="button" aria-label="Предыдущий слайд">
+    <svg><use href="#ico-prev"></use></svg>
+  </button>
+  <span class="navbar__count"><b class="counter__cur">01</b> / 17</span>
+  <span class="navbar__track"><span class="navbar__fill" id="navFill"></span></span>
+  <button class="navbar__btn" id="navNextBtn" type="button" aria-label="Следующий слайд">
+    <svg><use href="#ico-arrow"></use></svg>
+  </button>
+</div>
+
+<main class="stage">
+
+  <!-- 01 -->
+  <section class="s s--cover s--shot" id="s01" data-index="01">
+    <div class="panel">
+      <figure class="shot shot--cover">
+        <img class="shot__poster" src="assets/poster-hero.jpg" alt="Архитектурный рендер: минималистичный объём с панорамным остеклением" fetchpriority="high" decoding="async">
+        <video id="heroVideo" class="shot__video" muted playsinline preload="auto" poster="assets/poster-hero.jpg" tabindex="-1" aria-hidden="true">
+          <source src="assets/hero.mp4" type="video/mp4">
+          <source src="assets/hero.webm" type="video/webm">
+        </video>
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <h1 class="t t--l r">Мой опыт использования ИИ —<br>и&nbsp;как интегрировать его <span class="acc">в&nbsp;компанию</span></h1>
+          <p class="m r" data-d="1" style="margin-top:clamp(20px,3.6vh,44px);max-width:64ch">Шоурум итальянской мебели&nbsp;— Poliform&nbsp;· Modulnova&nbsp;· Baxter&nbsp;· Flexform со своей дизайн-студией: как ИИ встраивается в работу и как внедрить его в компанию</p>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">
+      <span>листай</span>
+      <span class="scroll-hint__line"><i></i></span>
+    </div>
+  </section>
+
+  <!-- бегущая строка инструментов -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee__track">
+      <div class="marquee__group">
+        <span>AutoCAD</span><b>×</b><span>Revit</span><b>×</b><span>3ds&nbsp;Max</span><b>×</b><span>Photoshop</span><b>×</b><span>Google&nbsp;Диск</span><b>×</b><span>Telegram</span><b>×</b>
+      </div>
+      <div class="marquee__group">
+        <span>AutoCAD</span><b>×</b><span>Revit</span><b>×</b><span>3ds&nbsp;Max</span><b>×</b><span>Photoshop</span><b>×</b><span>Google&nbsp;Диск</span><b>×</b><span>Telegram</span><b>×</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 -->
+  <section class="s" id="s02" data-index="02">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 01 / диагностика ]</span>
+          <h2 class="t t--m r">Сначала&nbsp;— где уходит время</h2>
+          <ul class="list list--idx" style="margin-top:clamp(26px,5vh,56px)">
+            <li class="r" data-d="1"><span class="idx">01</span><p class="m m--lg">сборка референсов в презентацию</p></li>
+            <li class="r" data-d="2"><span class="idx">02</span><p class="m m--lg">спецификации и пересчёт</p></li>
+            <li class="r" data-d="3"><span class="idx">03</span><p class="m m--lg">рендеры, которые превращаются в ролик вручную</p></li>
+            <li class="r" data-d="4"><span class="idx">04</span><p class="m m--lg">переименование, пересохранение, выгрузки</p></li>
+            <li class="r" data-d="5"><span class="idx">05</span><p class="m m--lg">КП, которое собирается три дня</p></li>
+          </ul>
+          <p class="note r" data-d="7" style="margin-top:clamp(24px,4.6vh,54px)">Ни один из этих пунктов&nbsp;— не дизайн.<br>Это <span class="acc-soft">обслуживание дизайна</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section class="s s--center s--shot" id="s03" data-index="03">
+    <div class="panel">
+      <figure class="shot shot--full">
+        <img class="shot__poster" src="assets/poster-orbit.jpg" alt="" loading="lazy" decoding="async">
+        <video class="shot__video video--bg" muted loop playsinline preload="none" poster="assets/poster-orbit.jpg" tabindex="-1" aria-hidden="true">
+          <source src="assets/orbit.mp4" type="video/mp4">
+          <source src="assets/orbit.webm" type="video/webm">
+        </video>
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 02 / тезис ]</span>
+          <h2 class="t t--l r">ИИ&nbsp;— не плагин.<br>Это <span class="acc">сотрудник</span>, который умеет<br>писать на языке твоих программ.</h2>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="s" id="s04" data-index="04">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 03 / подключение ]</span>
+          <h2 class="t t--s r">Три способа подключения</h2>
+          <div class="cols cols--3" style="margin-top:clamp(26px,5vh,56px)">
+            <div class="col r" data-d="1">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-chat"></use></svg></span>
+              <span class="num">01 / диалог</span>
+              <h3 class="ch">Диалог</h3>
+              <p class="m">кинул файл, фото, PDF&nbsp;→ получил результат</p>
+            </div>
+            <div class="col r" data-d="2">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-plug"></use></svg></span>
+              <span class="num">02 / коннектор</span>
+              <h3 class="ch">Коннектор</h3>
+              <p class="m">готовый «провод» к сервису: почта, диск, календарь</p>
+            </div>
+            <div class="col r" data-d="3">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-term"></use></svg></span>
+              <span class="num">03 / скрипт</span>
+              <h3 class="ch">Скрипт</h3>
+              <p class="m">ИИ пишет команду на языке программы: AutoCAD, Revit, 3ds Max</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section class="s" id="s05" data-index="05">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 04 / коммуникация ]</span>
+          <h2 class="t t--m r">Коммуникация</h2>
+          <dl class="rows" style="margin-top:clamp(26px,5vh,56px)">
+            <div class="row r" data-d="1"><dt class="ch ch--sm"><span class="row__live"></span>Почта</dt><dd class="m">читает переписку по объекту, выдаёт статус</dd></div>
+            <div class="row r" data-d="2"><dt class="ch ch--sm"><span class="row__live"></span>Календарь</dt><dd class="m">ставит встречи по голосовой команде</dd></div>
+            <div class="row r" data-d="3"><dt class="ch ch--sm"><span class="row__live"></span>Telegram</dt><dd class="m">бот, который пересказывает чат и готовит черновик ответа</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="s" id="s06" data-index="06">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 05 / знания ]</span>
+          <h2 class="t t--m r">Знания компании</h2>
+          <p class="lead r" data-d="1" style="margin-top:clamp(22px,4.2vh,48px)">Google Диск подключается напрямую. ИИ ищет не по названию файла, а по смыслу.</p>
+          <div class="term r" data-d="2" id="term">
+            <div class="term__bar">
+              <span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span>
+              <span class="term__title">диск — поиск по смыслу</span>
+            </div>
+            <div class="term__body">
+              <p class="term__line"><span class="term__prompt">❯</span><span class="term__typed"></span><span class="term__caret" aria-hidden="true"></span></p>
+              <p class="term__saved" id="termSaved" style="display:none">запрос выполнен — <b>3 / 3</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section class="s" id="s07" data-index="07">
+    <div class="panel">
+      <div class="panel__inner">
+        <svg class="structure structure--side" aria-hidden="true"><use href="#ico-structure"></use></svg>
+        <div class="wrap">
+          <span class="eyebrow r">[ 06 / проектирование ]</span>
+          <h2 class="t t--s r">Проектирование</h2>
+          <div class="cols cols--3" style="margin-top:clamp(26px,5vh,56px)">
+            <div class="col r" data-d="1">
+              <span class="num">01 / cad</span>
+              <h3 class="ch">AutoCAD</h3>
+              <p class="m">AutoLISP&nbsp;— слои, блоки, штампы</p>
+            </div>
+            <div class="col r" data-d="2">
+              <span class="num">02 / bim</span>
+              <h3 class="ch">Revit</h3>
+              <p class="m">Dynamo, pyRevit&nbsp;— спецификации, ведомости</p>
+            </div>
+            <div class="col r" data-d="3">
+              <span class="num">03 / viz</span>
+              <h3 class="ch">3ds Max</h3>
+              <p class="m">MAXScript, Python&nbsp;— чистка сцены, батч-переименование, параметрическая геометрия</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section class="s s--split" id="s08" data-index="08">
+    <div class="panel">
+      <figure class="shot shot--side">
+        <img src="assets/render-01.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 07 / визуал ]</span>
+          <h2 class="t t--m r">Визуал</h2>
+          <div class="cols cols--3" style="margin-top:clamp(24px,4.6vh,52px)">
+            <div class="col r" data-d="1">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-play"></use></svg></span>
+              <h3 class="ch">Анимация</h3>
+              <p class="m">оживляет рендеры движением камеры и светом&nbsp;— для подачи проекта клиенту</p>
+            </div>
+            <div class="col r" data-d="2">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-layers"></use></svg></span>
+              <h3 class="ch">Концепт</h3>
+              <p class="m">собирает референсы и рендеры в единую историю проекта</p>
+            </div>
+            <div class="col r" data-d="3">
+              <span class="ico"><svg viewBox="0 0 24 24"><use href="#ico-pen"></use></svg></span>
+              <h3 class="ch">Photoshop</h3>
+              <p class="m">скрипты и actions, батч-обработка рендеров</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section class="s" id="s09" data-index="09">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 08 / границы ]</span>
+          <h2 class="t t--m r">Что ИИ не делает</h2>
+          <ul class="list list--cross" style="margin-top:clamp(26px,5vh,56px)">
+            <li class="ch ch--sm r" data-d="1">Не проектирует.</li>
+            <li class="ch ch--sm r" data-d="2">Не имеет вкуса.</li>
+            <li class="ch ch--sm r" data-d="3">Не отвечает за размеры и деньги.</li>
+            <li class="ch ch--sm r" data-d="4">Не заменяет разговор с клиентом.</li>
+          </ul>
+          <p class="t t--s r" data-d="6" style="margin-top:clamp(30px,6vh,64px)">Дизайн остаётся <span class="acc">мой</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="s s--center s--shot s--vid" id="s10" data-index="10">
+    <div class="panel">
+      <figure class="shot shot--full">
+        <img class="shot__poster" src="assets/intro-bg.jpg" alt="" loading="lazy" decoding="async">
+        <video class="shot__video video--bg video--proj" muted loop playsinline preload="none" poster="assets/intro-bg.jpg" tabindex="-1" aria-hidden="true">
+          <source src="assets/intro-video.mp4" type="video/mp4">
+          <source src="assets/intro-video.webm" type="video/webm">
+        </video>
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 09 / практика ]</span>
+          <h2 class="t t--xl r">80% моих задумок.<br><span class="acc">ИИ&nbsp;довёл до&nbsp;100%</span>.</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(18px,3.2vh,36px);max-width:62ch;margin-left:auto;margin-right:auto">все проекты на следующих слайдах спроектированы с&nbsp;ИИ&nbsp;— как ассистентом идей и&nbsp;логики, а&nbsp;не автором</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="s s--shot s--proj s--vid" id="s11" data-index="11">
+    <div class="panel">
+      <figure class="shot">
+        <img class="shot__poster" src="assets/p01-01.jpg" alt="Проект 01 — архитектурный рендер" fetchpriority="high" decoding="async">
+        <video class="shot__video video--bg video--proj" muted loop playsinline preload="none" poster="assets/p01-01.jpg" tabindex="-1" aria-hidden="true">
+          <source src="assets/proj01.mp4" type="video/mp4">
+          <source src="assets/proj01.webm" type="video/webm">
+        </video>
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ проект 01 / анимация ]</span>
+          <h2 class="t t--l r">Проект&nbsp;01</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(14px,2.6vh,28px);max-width:58ch">спроектирован с&nbsp;ИИ · рендеры оживлены движением камеры</p>
+          <div class="strip r" data-d="2">
+            <img src="assets/p01-02.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-03.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-04.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-05.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-06.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-07.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p01-08.jpg" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="s s--shot s--proj" id="s12" data-index="12">
+    <div class="panel">
+      <figure class="shot">
+        <img class="shot__poster" src="assets/p02-01.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ проект 02 / пример ]</span>
+          <h2 class="t t--l r">Проект&nbsp;02</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(14px,2.6vh,28px);max-width:58ch">спроектирован с&nbsp;ИИ&nbsp;— как ассистентом идей и&nbsp;логики</p>
+          <div class="strip r" data-d="2">
+            <img src="assets/p02-02.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-03.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-04.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-05.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-06.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-07.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p02-08.jpg" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="s s--shot s--proj" id="s13" data-index="13">
+    <div class="panel">
+      <figure class="shot">
+        <img class="shot__poster" src="assets/p03-01.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ проект 03 / пример ]</span>
+          <h2 class="t t--l r">Проект&nbsp;03</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(14px,2.6vh,28px);max-width:58ch">спроектирован с&nbsp;ИИ&nbsp;— как ассистентом идей и&nbsp;логики</p>
+          <div class="strip r" data-d="2">
+            <img src="assets/p03-02.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-03.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-04.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-05.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-06.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-07.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p03-08.jpg" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section class="s s--shot s--proj" id="s14" data-index="14">
+    <div class="panel">
+      <figure class="shot">
+        <img class="shot__poster" src="assets/p04-01.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ проект 04 / пример ]</span>
+          <h2 class="t t--l r">Проект&nbsp;04</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(14px,2.6vh,28px);max-width:58ch">спроектирован с&nbsp;ИИ&nbsp;— как ассистентом идей и&nbsp;логики</p>
+          <div class="strip r" data-d="2">
+            <img src="assets/p04-02.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p04-03.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p04-04.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p04-05.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p04-06.jpg" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section class="s s--shot s--proj" id="s15" data-index="15">
+    <div class="panel">
+      <figure class="shot">
+        <img class="shot__poster" src="assets/p05-01.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ проект 05 / пример ]</span>
+          <h2 class="t t--l r">Проект&nbsp;05</h2>
+          <p class="m r" data-d="1" style="margin-top:clamp(14px,2.6vh,28px);max-width:58ch">спроектирован с&nbsp;ИИ&nbsp;— как ассистентом идей и&nbsp;логики</p>
+          <div class="strip r" data-d="2">
+            <img src="assets/p05-02.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p05-03.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p05-04.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p05-05.jpg" alt="" loading="lazy" decoding="async">
+            <img src="assets/p05-06.jpg" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section class="s" id="s16" data-index="16">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 15 / план ]</span>
+          <h2 class="t t--xs r">План внедрения</h2>
+          <div class="steps" style="margin-top:clamp(28px,5.4vh,60px)">
+            <div class="step r" data-d="1">
+              <span class="step__n">01</span>
+              <h3 class="ch">Сегодня</h3>
+              <p class="m">подключить почту, диск, календарь</p>
+            </div>
+            <div class="step r" data-d="2">
+              <span class="step__n">02</span>
+              <h3 class="ch">За неделю</h3>
+              <p class="m">собрать референсы и рендеры в единый архив</p>
+            </div>
+            <div class="step r" data-d="3">
+              <span class="step__n">03</span>
+              <h3 class="ch">За месяц</h3>
+              <p class="m">собрать скрипты под повторяющиеся задачи в CAD и Revit</p>
+            </div>
+          </div>
+          <p class="t t--s r" data-d="5" style="margin-top:clamp(30px,6vh,64px)">Рутина падает.<br>Время идёт <span class="acc">в проект и в клиента</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 -->
+  <section class="s s--center s--final s--shot" id="s17" data-index="17">
+    <div class="panel">
+      <figure class="shot shot--full shot--final">
+        <img src="assets/poster-hero.jpg" alt="" loading="lazy" decoding="async">
+      </figure>
+      <div class="panel__inner">
+        <div class="wrap">
+          <span class="eyebrow r">[ 16 / финал ]</span>
+          <h2 class="t t--xl r">ИИ уже в&nbsp;моей работе.<br><span class="acc rule">Внедряю в&nbsp;компанию</span>.</h2>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var sections  = Array.prototype.slice.call(document.querySelectorAll('.s'));
+  var reveals   = Array.prototype.slice.call(document.querySelectorAll('.r'));
+  var ringFill  = document.querySelector('.ring-fill');
+  var pctEl     = document.querySelector('.progress-pct');
+  var counter   = document.querySelectorAll('.counter__cur');
+  var dots      = Array.prototype.slice.call(document.querySelectorAll('.dots__i'));
+  var menuLinks = Array.prototype.slice.call(document.querySelectorAll('.menu-panel__list a'));
+  var navFill   = document.getElementById('navFill');
+  var RING_CIRCUMFERENCE = 91.1;
+  var currentIndex = 0;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var wideMq = window.matchMedia('(min-width: 901px)');
+
+  /* --- hero-видео: скраб при прокрутке (десктоп) / автоплей-петля (мобайл) --- */
+  var heroVideo = document.getElementById('heroVideo');
+  var heroDur = 0;
+  if (heroVideo) {
+    function refreshHeroDur() {
+      var d = heroVideo.duration;
+      if (isFinite(d) && d > 0) heroDur = d;
+    }
+    heroVideo.addEventListener('loadedmetadata', refreshHeroDur);
+    heroVideo.addEventListener('durationchange', refreshHeroDur);
+    heroVideo.addEventListener('canplay', refreshHeroDur);
+    refreshHeroDur(); /* видео могло загрузиться раньше скрипта (кеш/быстрый канал) */
+    /* страховка от гонки: если duration ещё неизвестен, опрашиваем недолго */
+    var tries = 0;
+    var heroDurTimer = setInterval(function () {
+      tries++;
+      refreshHeroDur();
+      if (heroDur || tries > 60) clearInterval(heroDurTimer);
+    }, 250);
+  }
+
+  function scrubHero() {
+    if (!heroVideo || reduced || !wideMq.matches || !heroDur) return;
+    var target = Math.min(1, Math.max(0, window.pageYOffset / window.innerHeight)) * (heroDur - 0.08);
+    if (Math.abs(heroVideo.currentTime - target) > 0.04) {
+      heroVideo.currentTime = target;
+    }
+  }
+
+  function playHeroLoop() {
+    if (!heroVideo) return;
+    heroVideo.loop = true;
+    heroVideo.defaultMuted = true;
+    var p = heroVideo.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+  if (heroVideo && !reduced && !wideMq.matches) playHeroLoop();
+
+  /* орбита-видео: грузится и играет только на десктопе (на мобильном скрыто) */
+  var bgVideo = document.querySelector('.video--bg');
+  if (bgVideo) {
+    if (wideMq.matches && !reduced) {
+      bgVideo.preload = 'auto';
+      var bp = bgVideo.play();
+      if (bp && bp.catch) bp.catch(function () {});
+    }
+  }
+
+  /* проектные видео («Мои проекты»): играют, только когда слайд рядом с вьюпортом */
+  var projVideos = Array.prototype.slice.call(document.querySelectorAll('.video--proj'));
+  if (projVideos.length && wideMq.matches && !reduced && 'IntersectionObserver' in window) {
+    var projVidObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var v = entry.target;
+        if (entry.isIntersecting) {
+          v.preload = 'auto';
+          var p = v.play();
+          if (p && p.catch) p.catch(function () {});
+        } else {
+          v.pause();
+        }
+      });
+    }, { threshold: 0.3 });
+    projVideos.forEach(function (v) { projVidObs.observe(v); });
+  }
+
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  /* --- интро-шторка --- */
+  var intro = document.getElementById('intro');
+  function hideIntro() {
+    if (intro) intro.classList.add('is-done');
+  }
+  if (reduced) {
+    hideIntro();
+  } else {
+    var introTimer = setTimeout(hideIntro, 1200);
+    window.addEventListener('load', function () {
+      clearTimeout(introTimer);
+      setTimeout(hideIntro, 300);
+    });
+  }
+
+  /* --- задержки появления: data-d="2" → 2 шага по 80 мс --- */
+  reveals.forEach(function (el) {
+    var step = parseFloat(el.getAttribute('data-d')) || 0;
+    el.style.setProperty('--d', (step * 80) + 'ms');
+  });
+
+  /* --- появление при скролле --- */
+  var pending = reveals.slice();
+
+  function reveal(el, instant) {
+    if (instant) el.style.setProperty('--d', '0ms');
+    el.classList.add('in');
+    var i = pending.indexOf(el);
+    if (i > -1) pending.splice(i, 1);
+  }
+
+  function setCounter(idx) {
+    counter.forEach(function (el) { el.textContent = idx; });
+  }
+
+  if ('IntersectionObserver' in window) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          reveal(entry.target);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+
+    reveals.forEach(function (el) { revealObserver.observe(el); });
+
+    var currentObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-live');
+          var idx = entry.target.getAttribute('data-index');
+          currentIndex = sections.indexOf(entry.target);
+          setCounter(idx);
+          dots.forEach(function (d, i) { d.classList.toggle('is-active', i === currentIndex); });
+          menuLinks.forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-i') === idx); });
+        }
+      });
+    }, { threshold: 0.5 });
+
+    sections.forEach(function (s) { currentObserver.observe(s); });
+  } else {
+    reveals.forEach(function (el) { reveal(el, true); });
+    sections.forEach(function (s) { s.classList.add('is-live'); });
+  }
+
+  /* --- страховка для быстро пролистанного --- */
+  function sweepPassed() {
+    for (var i = pending.length - 1; i >= 0; i--) {
+      if (pending[i].getBoundingClientRect().bottom <= 0) reveal(pending[i], true);
+    }
+  }
+
+  /* --- прогресс: кольцо + мобильная полоса --- */
+  var ticking = false;
+
+  function updateProgress() {
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var ratio = max > 0 ? Math.min(1, Math.max(0, window.pageYOffset / max)) : 0;
+    if (ringFill) ringFill.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - ratio));
+    if (pctEl) pctEl.textContent = String(Math.round(ratio * 100));
+    if (navFill) navFill.style.width = (ratio * 100) + '%';
+    scrubHero();
+    if (pending.length) sweepPassed();
+    ticking = false;
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      window.requestAnimationFrame(updateProgress);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  updateProgress();
+
+  /* --- навигация: кнопки и клавиатура --- */
+  function go(i) {
+    var n = sections.length;
+    var target = sections[((i % n) + n) % n];
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function next() { go(currentIndex + 1); }
+  function prev() { go(currentIndex - 1); }
+
+  var nextBtn = document.getElementById('nextBtn');
+  var navNextBtn = document.getElementById('navNextBtn');
+  var prevBtn = document.getElementById('prevBtn');
+  if (nextBtn) nextBtn.addEventListener('click', next);
+  if (navNextBtn) navNextBtn.addEventListener('click', next);
+  if (prevBtn) prevBtn.addEventListener('click', prev);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown') {
+      e.preventDefault(); next();
+    } else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') {
+      e.preventDefault(); prev();
+    } else if (k === 'Home') {
+      e.preventDefault(); go(0);
+    } else if (k === 'End') {
+      e.preventDefault(); go(sections.length - 1);
+    }
+  });
+
+  /* --- меню --- */
+  var menuBtn = document.getElementById('menuBtn');
+  var menuPanel = document.getElementById('menuPanel');
+  var menuIcoUse = document.getElementById('menuIcoUse');
+
+  function closeMenu() {
+    if (!menuBtn) return;
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menuPanel.classList.remove('is-open');
+    menuPanel.setAttribute('aria-hidden', 'true');
+    if (menuIcoUse) menuIcoUse.setAttribute('href', '#ico-menu');
+    document.body.classList.remove('menu-open');
+  }
+
+  function openMenu() {
+    menuBtn.setAttribute('aria-expanded', 'true');
+    menuPanel.classList.add('is-open');
+    menuPanel.setAttribute('aria-hidden', 'false');
+    if (menuIcoUse) menuIcoUse.setAttribute('href', '#ico-close');
+    document.body.classList.add('menu-open');
+  }
+
+  if (menuBtn && menuPanel) {
+    menuBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = menuPanel.classList.contains('is-open');
+      if (isOpen) closeMenu(); else openMenu();
+    });
+
+    menuPanel.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a') : null;
+      if (!link) return;
+      e.preventDefault();
+      var target = document.getElementById(link.getAttribute('href').slice(1));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      closeMenu();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!menuPanel.classList.contains('is-open')) return;
+      if (menuPanel.contains(e.target) || menuBtn.contains(e.target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeMenu();
+    });
+  }
+
+  /* --- живой терминал --- */
+  var termTyped = document.querySelector('.term__typed');
+  var termSaved = document.getElementById('termSaved');
+  var commands = [
+    'найди спецификацию по объекту на Патриарших',
+    'собери референсы и наброски проекта в единый мудборд',
+    'оживи рендеры гостиной в ролик с движением камеры'
+  ];
+
+  function termStatic() {
+    if (!termTyped) return;
+    termTyped.innerHTML = commands.map(function (c) {
+      return '<br><span class="term__prompt">❯</span>' + c;
+    }).join('').replace(/^<br>/, '');
+  }
+
+  if (termTyped && !reduced) {
+    var started = false;
+    var ci = 0, pos = 0, phase = 'type';
+    var timer = null;
+
+    function tick() {
+      if (phase === 'type') {
+        pos++;
+        termTyped.textContent = commands[ci].slice(0, pos);
+        if (pos === commands[ci].length) {
+          phase = 'hold';
+          timer = setTimeout(tick, 1700);
+        } else {
+          timer = setTimeout(tick, 34 + Math.random() * 40);
+        }
+      } else if (phase === 'hold') {
+        phase = 'erase';
+        timer = setTimeout(tick, 500);
+      } else if (phase === 'erase') {
+        pos--;
+        termTyped.textContent = commands[ci].slice(0, pos);
+        if (pos === 0) {
+          ci = (ci + 1) % commands.length;
+          phase = 'type';
+          timer = setTimeout(tick, 420);
+        } else {
+          timer = setTimeout(tick, 12);
+        }
+      }
+    }
+
+    var termObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && !started) {
+          started = true;
+          tick();
+          termObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.4 });
+    termObserver.observe(document.getElementById('term'));
+
+    /* после третьего запроса — финальная строка */
+    (function watchLast() {
+      var prev = '';
+      var iv = setInterval(function () {
+        var t = termTyped.textContent;
+        if (ci === commands.length - 1 && t === commands[ci] && t !== prev) {
+          setTimeout(function () {
+            if (termSaved) termSaved.style.display = 'block';
+          }, 600);
+          clearInterval(iv);
+        }
+        prev = t;
+      }, 300);
+    })();
+  } else {
+    termStatic();
+  }
+
+  /* --- параллакс рендеров (десктоп) --- */
+  if (!reduced && 'IntersectionObserver' in window) {
+    var shots = Array.prototype.slice.call(document.querySelectorAll('.shot img'));
+    var wide = window.matchMedia('(min-width: 901px)');
+
+    function parallax() {
+      if (!wide.matches) return;
+      var vh = window.innerHeight;
+      shots.forEach(function (img) {
+        var shot = img.closest('.shot');
+        var rect = shot.getBoundingClientRect();
+        if (rect.bottom < -80 || rect.top > vh + 80) return;
+        if (img.closest('.s--kb')) return;
+        var progress = (rect.top + rect.height / 2 - vh / 2) / vh;
+        img.style.transform = 'scale(1.08) translateY(' + (-progress * 46) + 'px)';
+      });
+    }
+
+    var raf = null;
+    function onParallaxScroll() {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        parallax();
+        raf = null;
+      });
+    }
+
+    window.addEventListener('scroll', onParallaxScroll, { passive: true });
+    window.addEventListener('resize', onParallaxScroll, { passive: true });
+    parallax();
+  }
+})();
+</script>
+</body>
+</html>
